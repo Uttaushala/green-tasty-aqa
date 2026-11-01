@@ -9,7 +9,7 @@ The tests cover the owner's side of a group pre-order, on three levels:
 | Level | Tag | What is checked |
 |---|---|---|
 | 1 | `@level-1` | The owner sees every participant with dishes, quantities, per-participant and grand totals; unconfirmed participants are marked; a participant without dishes; a group nobody joined; totals follow a guest's changes; the page is read-only less than 30 minutes before the reservation; only the owner may see the list (another customer, a guest, the waiter and an anonymous visitor are turned away); an unknown group is "not found". |
-| 2 | `@level-2` | Sending the shared pre-order: only confirmed carts, equal dishes merged with summed quantity, the order and the group change state, the waiter sees the order; refused when there is nothing to send, for an unknown group or reservation, for a second attempt and for anyone but the owner. |
+| 2 | `@level-2` | Sending the shared pre-order: only confirmed carts, equal dishes merged with summed quantity, the order and the group change state, the waiter sees the order; refused when there is nothing to send (nobody confirmed, nobody joined, an empty cart cannot be confirmed, the owner has no pre-order of their own), for an unknown group or reservation, for a second attempt and for anyone but the owner. |
 | 3 | `@level-3` | Removing a guest: one of several (total recalculated), a guest who already confirmed (leaves the order too), the last guest, a guest of another group, an unknown guest, anyone but the owner; the same on the page, including cancelling the dialog; one end-to-end flow from the guests' choices to the waiter's order. |
 
 Every level has positive and negative scenarios, UI (`@ui`) and API (`@api`) ones. The UI scenarios drive the real storefront in a browser; the API is used only to set up and tidy the data, to act as the guests (guests have no UI-free way in other than their invite link) and, in a few `Then` steps, to read back the state the page cannot show (the group's status, the waiter's order). Pure API scenarios check what the page cannot: who is allowed to do what, and what the service answers.
@@ -74,7 +74,7 @@ In CI the same folders are uploaded as the artifacts `tunit-report`, `reqnroll-r
 
 ## Test data
 
-* Every scenario builds its own world through the API: a location, a table, dishes with known prices, a waiter of its own, a freshly registered owner (unique e-mail), the booking, and guests with carts. Nothing depends on data that already exists, so scenarios are independent, run in any order and in parallel (`MAX_PARALLEL_TESTS`, default: CPU count, at most 4).
+* Every scenario builds its own world through the API: a location, a table, dishes with known prices, a waiter of its own, a freshly registered owner (unique e-mail), the booking, the owner's own pre-order (the service sends a group pre-order only into an existing order of the reservation), and guests with carts. Nothing depends on data that already exists, so scenarios are independent, run in any order and in parallel (`MAX_PARALLEL_TESTS`, default: CPU count, at most 4).
 * Names created by the tests carry the `AQA-Sample-` prefix; dishes also carry a random suffix.
 * Times are never written down: a booking is "starting in N minutes" and the start is `now + N` when the scenario runs (120 minutes normally, 20 minutes for the read-only scenario).
 * Clean-up: each task registers its removal (reservation cancelled, dishes and location deleted) in the scenario's `CleanupScope`, which runs after every scenario, passed or failed; the framework's sweep removes leftover `AQA-Sample-` locations and dishes before and after a run. Waiters are removed from the waiter list; customers cannot be deleted through the API, they are recognisable by the prefix and a unique e-mail.
@@ -95,6 +95,14 @@ In CI the same folders are uploaded as the artifacts `tunit-report`, `reqnroll-r
 | Less than 30 minutes before the reservation | the page is read-only: no Submit button, no remove buttons, a notice explains why |
 
 Scenarios whose expected behaviour the application does not (yet) meet are to stay red and be tagged `@known-defect` with a comment, never ignored.
+
+## Current result
+
+Against my deployed environment the group pre-order scenarios (`@group-order`, 42 in total: levels 1, 2 and 3, UI and API) give **41 passed, 1 failed**. The one red scenario is a real defect of the service: *A second attempt is refused and the order stays as it was* (`@known-defect`): sending the group pre-order a second time returns 200 instead of a refusal. The same result is produced by the CI workflow (Actions -> AQA Tests); its summary and the artifacts `tunit-report` and `reqnroll-report` are attached to each run.
+
+The scenarios of the original framework (locations, menu, registration, sign-in as a waiter and so on) need a standing waiter account (`WAITER_*`) and are not part of this homework; CI runs the `group-order` scope by default, the others can be started with the `scope` input of the workflow.
+
+Not covered: the owner adding their own dishes through their own guest session.
 
 ## CI
 
