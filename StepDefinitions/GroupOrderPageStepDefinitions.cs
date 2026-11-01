@@ -1,3 +1,4 @@
+using Restaurant_Aqa_Framework.Api.Seeding;
 using Restaurant_Aqa_Framework.Screenplay;
 using Restaurant_Aqa_Framework.Screenplay.Questions;
 using Restaurant_Aqa_Framework.Screenplay.Tasks;
@@ -83,13 +84,16 @@ public sealed class GroupOrderPageStepDefinitions(Actor actor) : StepDefinitionB
         });
     }
 
-    [Then("the page shows no participants")]
-    public async Task ThenPageShowsNoParticipants()
+    // The owner's own card ("My Pre-Order") is drawn only once the owner's session exists, which the page itself
+    // creates, so it may or may not be there; only guests are counted.
+    [Then("the page shows no guests")]
+    public async Task ThenPageShowsNoGuests()
     {
         await EventuallyAsync(async () =>
         {
             var page = await Actor.AsksForAsync(new TheGroupPreOrderShown());
-            await Assert.That(page.Participants.Count).IsEqualTo(0).Because($"the page shows: {string.Join(", ", page.Participants.Select(person => person.Title))}");
+            var guests = page.Participants.Where(person => person.Title.Contains(SampleDataFactory.Prefix, StringComparison.Ordinal)).ToList();
+            await Assert.That(guests.Count).IsEqualTo(0).Because($"the page shows: {string.Join(", ", guests.Select(person => person.Title))}");
         });
     }
 

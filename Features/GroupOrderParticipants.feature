@@ -55,10 +55,10 @@ Feature: Group pre-order participants
       And the page marks "Taras" as "still choosing"
 
     @ui
-    Scenario: A group nobody has joined shows no participants
+    Scenario: A group nobody has joined shows no guests
       Given the owner is signed in to the storefront
       When the owner opens the group pre-order
-      Then the page shows no participants
+      Then the page shows no guests
       And the page shows a grand total of "0.00"
 
     @ui
