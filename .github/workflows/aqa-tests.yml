@@ -7,10 +7,11 @@ on:
         description: "Which scenarios to run"
         type: choice
         options:
+          - group-order
           - all
           - ui
           - api
-        default: all
+        default: group-order
       custom_filter:
         description: >
           Optional Microsoft.Testing.Platform tree filter (overrides "scope" when set), e.g.
@@ -111,10 +112,12 @@ jobs:
         shell: bash
         run: |
           custom_filter="${{ inputs.custom_filter }}"
-          scope="${{ inputs.scope || 'all' }}"
+          scope="${{ inputs.scope || 'group-order' }}"
 
           if [ -n "$custom_filter" ]; then
             filter="$custom_filter"
+          elif [ "$scope" = "group-order" ]; then
+            filter="/*/*/*/*[Category=group-order]"
           elif [ "$scope" = "ui" ]; then
             filter="/*/*/*/*[Category=ui]"
           elif [ "$scope" = "api" ]; then
@@ -180,7 +183,7 @@ jobs:
       - name: Write job summary
         if: always()
         env:
-          SCOPE: ${{ inputs.scope || 'all' }}
+          SCOPE: ${{ inputs.scope || 'group-order' }}
           FILTER: ${{ steps.filter.outputs.filter }}
           RUN_OUTCOME: ${{ steps.run_tests.outcome }}
         run: |
